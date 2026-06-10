@@ -3,6 +3,9 @@ services:
     image: quay.io/invidious/invidious:latest
     restart: unless-stopped
 
+    ports:
+      - "3000:3000"
+
     environment:
       INVIDIOUS_CONFIG: |
         db:
@@ -25,7 +28,7 @@ services:
         invidious_companion:
           - private_url: "http://companion:8282/companion"
 
-        invidious_companion_key: "${SERVICE_HEX_64_COMPANION}"
+        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
 
         use_pubsub_feeds: true
         use_innertube_for_captions: true
@@ -35,10 +38,11 @@ services:
       - companion
 
     healthcheck:
-      test: wget -nv --tries=1 --spider http://127.0.0.1:3000/api/v1/stats || exit 1
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
-      timeout: 5s
-      retries: 3
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
     logging:
       options:
@@ -50,7 +54,7 @@ services:
     restart: unless-stopped
 
     environment:
-      SERVER_SECRET_KEY: ${SERVICE_HEX_64_COMPANION}
+      SERVER_SECRET_KEY: ${SERVICE_PASSWORD_COMPANION}
 
     cap_drop:
       - ALL
