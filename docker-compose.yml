@@ -14,7 +14,7 @@ services:
 
         check_tables: true
 
-        domain: ${SERVICE_FQDN_INVIDIOUS_3000}
+        domain: ${SERVICE_FQDN_INVIDIOUS}
         external_port: 443
         https_only: true
 
