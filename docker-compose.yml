@@ -1,6 +1,6 @@
 services:
   invidious:
-    image: quay.io/invidious/invidious:v2.20260626.0
+    image: quay.io/invidious/invidious:2.20260626.0
     restart: unless-stopped
 
     ports:
