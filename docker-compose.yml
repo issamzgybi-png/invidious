@@ -3,9 +3,6 @@ services:
     image: quay.io/invidious/invidious:2.20260626.0
     restart: unless-stopped
 
-    ports:
-      - "192.168.2.137:3000:3000"
-
     environment:
       INVIDIOUS_CONFIG: |
         db:
@@ -53,9 +50,6 @@ services:
   companion:
     image: quay.io/invidious/invidious-companion:latest
     restart: unless-stopped
-
-    ports:
-      - "192.168.2.137:8282:8282"
 
     environment:
       SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
