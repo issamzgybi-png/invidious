@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "3000:3000"
+      - "192.168.2.137:3000:3000"
 
     environment:
       INVIDIOUS_CONFIG: |
@@ -27,6 +27,7 @@ services:
 
         invidious_companion:
           - private_url: "http://companion:8282/companion"
+            public_url: "https://${SERVICE_FQDN_INVIDIOUS}/companion"
 
         invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
 
@@ -53,8 +54,11 @@ services:
     image: quay.io/invidious/invidious-companion:latest
     restart: unless-stopped
 
+    ports:
+      - "192.168.2.137:8282:8282"
+
     environment:
-      SERVER_SECRET_KEY: ${SERVICE_PASSWORD_COMPANION}
+      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
 
     cap_drop:
       - ALL
@@ -79,7 +83,7 @@ services:
     environment:
       POSTGRES_DB: invidious
       POSTGRES_USER: kemal
-      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_PASSWORD: "${SERVICE_PASSWORD_POSTGRES}"
 
     volumes:
       - postgresdata:/var/lib/postgresql/data
