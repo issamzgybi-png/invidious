@@ -3,8 +3,8 @@ services:
     image: quay.io/invidious/invidious:2.20260626.0
     restart: unless-stopped
 
-    ports:
-      - "192.168.2.137:3000:3000"
+    expose:
+      - "3000"
 
     environment:
       INVIDIOUS_CONFIG: |
@@ -17,7 +17,7 @@ services:
 
         check_tables: true
 
-        domain: ${SERVICE_FQDN_INVIDIOUS}
+        domain: app.fullcontrolvpn.com
         external_port: 443
         https_only: true
 
@@ -27,7 +27,7 @@ services:
 
         invidious_companion:
           - private_url: "http://companion:8282/companion"
-            public_url: "https://${SERVICE_FQDN_INVIDIOUS}/companion"
+            public_url: "https://app.fullcontrolvpn.com/companion"
 
         invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
 
@@ -54,8 +54,8 @@ services:
     image: quay.io/invidious/invidious-companion:latest
     restart: unless-stopped
 
-    ports:
-      - "192.168.2.137:8282:8282"
+    expose:
+      - "8282"
 
     environment:
       SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
