@@ -6,14 +6,6 @@ services:
     expose:
       - "3000"
 
-    labels:
-      - traefik.enable=true
-
-      # Main Invidious route: everything EXCEPT /companion
-      - traefik.http.routers.invidious.rule=Host(`app.fullcontrolvpn.com`) && !PathPrefix(`/companion`)
-      - traefik.http.routers.invidious.priority=10
-      - traefik.http.services.invidious.loadbalancer.server.port=3000
-
     environment:
       INVIDIOUS_CONFIG: |
         db:
@@ -30,6 +22,8 @@ services:
         https_only: true
 
         statistics_enabled: false
+        use_pubsub_feeds: true
+        use_innertube_for_captions: true
 
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
@@ -37,19 +31,16 @@ services:
           - private_url: "http://companion:8282/companion"
             public_url: "https://app.fullcontrolvpn.com/companion"
 
-        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
-
-        use_pubsub_feeds: true
-        use_innertube_for_captions: true
+        invidious_companion_key: "${SERVICE_USER_COMPANION}"
 
     depends_on:
       invidious-db:
         condition: service_healthy
       companion:
-        condition: service_started
+        condition: service_healthy
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider --tries=1 http://127.0.0.1:3000/api/v1/stats || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -67,16 +58,19 @@ services:
     expose:
       - "8282"
 
-    labels:
-      - traefik.enable=true
-
-      # Companion route: only /companion and below
-      - traefik.http.routers.invidious-companion.rule=Host(`app.fullcontrolvpn.com`) && PathPrefix(`/companion`)
-      - traefik.http.routers.invidious-companion.priority=100
-      - traefik.http.services.invidious-companion.loadbalancer.server.port=8282
-
     environment:
-      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
+      HOST: "0.0.0.0"
+      PORT: "8282"
+      SERVER_BASE_PATH: "/companion"
+      SERVER_SECRET_KEY: "${SERVICE_USER_COMPANION}"
+      CACHE_DIRECTORY: "/var/tmp"
+
+    healthcheck:
+      test: ["CMD", "/thc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
     cap_drop:
       - ALL
@@ -114,6 +108,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+    logging:
+      options:
+        max-size: "1G"
+        max-file: "4"
 
 volumes:
   postgresdata:
