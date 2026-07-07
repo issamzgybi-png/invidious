@@ -22,8 +22,6 @@ services:
         https_only: true
 
         statistics_enabled: false
-        use_pubsub_feeds: true
-        use_innertube_for_captions: true
 
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
@@ -31,20 +29,21 @@ services:
           - private_url: "http://companion:8282/companion"
             public_url: "https://app.fullcontrolvpn.com/companion"
 
-        invidious_companion_key: "${SERVICE_USER_COMPANION}"
+        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
+
+        use_pubsub_feeds: true
+        use_innertube_for_captions: true
 
     depends_on:
-      invidious-db:
-        condition: service_healthy
-      companion:
-        condition: service_healthy
+      - invidious-db
+      - companion
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider --tries=1 http://127.0.0.1:3000/api/v1/stats || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 90s
+      start_period: 60s
 
     logging:
       options:
@@ -59,18 +58,7 @@ services:
       - "8282"
 
     environment:
-      HOST: "0.0.0.0"
-      PORT: "8282"
-      SERVER_BASE_PATH: "/companion"
-      SERVER_SECRET_KEY: "${SERVICE_USER_COMPANION}"
-      CACHE_DIRECTORY: "/var/tmp"
-
-    healthcheck:
-      test: ["CMD", "/thc"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
 
     cap_drop:
       - ALL
@@ -99,15 +87,14 @@ services:
 
     volumes:
       - postgresdata:/var/lib/postgresql/data
-      - ./config/sql:/config/sql:ro
-      - ./docker/init-invidious-db.sh:/docker-entrypoint-initdb.d/init-invidious-db.sh:ro
+      - ./config/sql:/config/sql
+      - ./docker/init-invidious-db.sh:/docker-entrypoint-initdb.d/init-invidious-db.sh
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 30s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 5
 
 volumes:
   postgresdata:
