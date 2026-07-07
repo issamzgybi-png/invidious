@@ -24,7 +24,7 @@ services:
 
         invidious_companion:
           - private_url: "http://companion:8282/companion"
-            public_url: "https://app.fullcontrolvpn.com/companion"
+            public_url: "https://companion.fullcontrolvpn.com/companion"
 
         invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
 
@@ -62,6 +62,14 @@ services:
       SERVER_BASE_PATH: "/companion"
       SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
       CACHE_DIRECTORY: "/var/tmp"
+    labels:
+      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolallowmethods=GET,HEAD,OPTIONS,POST"
+      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolallowheaders=Range,Content-Type,Authorization,Accept,Origin,X-Requested-With"
+      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolexposeheaders=Accept-Ranges,Content-Encoding,Content-Length,Content-Range,Content-Type"
+      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolalloworiginlist=https://app.fullcontrolvpn.com"
+      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.invidious-companion-cors.headers.addvaryheader=true"
+      - "coolify.traefik.middlewares=invidious-companion-cors"
     cap_drop:
       - ALL
     read_only: true
