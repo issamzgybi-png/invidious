@@ -36,11 +36,12 @@ services:
           quality_dash: best
           local: true
           preload: true
+
     depends_on:
       - invidious-db
       - companion
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -57,6 +58,7 @@ services:
       - "8282"
     environment:
       HOST: "0.0.0.0"
+      PORT: "8282"
       SERVER_BASE_PATH: "/companion"
       SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
       CACHE_DIRECTORY: "/var/tmp"
