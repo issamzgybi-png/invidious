@@ -1,6 +1,6 @@
 services:
   invidious:
-    image: quay.io/invidious/invidious:2.20260626.0
+    image: quay.io/invidious/invidious:latest
     restart: unless-stopped
 
     expose:
@@ -22,32 +22,49 @@ services:
         https_only: true
 
         statistics_enabled: false
+        disable_proxy: false
+        pool_size: 150
 
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
         invidious_companion:
           - private_url: "http://companion:8282/companion"
-            public_url: "https://app.fullcontrolvpn.com/companion"
+            public_url: "https://companion.fullcontrolvpn.com/companion"
 
-        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
+        invidious_companion_key: "${COMPANION_SECRET}"
 
         use_pubsub_feeds: true
         use_innertube_for_captions: true
 
+        default_user_preferences:
+          preload: true
+          quality: dash
+          quality_dash: 1080p
+          local: true
+          autoplay: false
+          listen: false
+
     depends_on:
-      - invidious-db
-      - companion
+      invidious-db:
+        condition: service_healthy
+      companion:
+        condition: service_started
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
       start_period: 60s
 
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
     logging:
       options:
-        max-size: "1G"
+        max-size: "256M"
         max-file: "4"
 
   companion:
@@ -58,7 +75,21 @@ services:
       - "8282"
 
     environment:
-      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
+      HOST: "0.0.0.0"
+      PORT: "8282"
+
+      SERVER_SECRET_KEY: "${COMPANION_SECRET}"
+      SERVER_BASE_PATH: "/companion"
+      SERVER_ENABLE_METRICS: "true"
+
+      CACHE_ENABLED: "true"
+      CACHE_DIRECTORY: "/var/tmp"
+
+      JOBS_YOUTUBE_SESSION_PO_TOKEN_ENABLED: "true"
+      JOBS_YOUTUBE_SESSION_FREQUENCY: "*/5 * * * *"
+
+      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "1"
+      NETWORKING_FETCH_TIMEOUT_MS: "30000"
 
     cap_drop:
       - ALL
@@ -69,11 +100,16 @@ services:
       - no-new-privileges:true
 
     volumes:
-      - companioncache:/var/tmp/youtubei.js:rw
+      - companioncache:/var/tmp:rw
+
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
     logging:
       options:
-        max-size: "1G"
+        max-size: "256M"
         max-file: "4"
 
   invidious-db:
@@ -95,6 +131,12 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 30s
+
+    logging:
+      options:
+        max-size: "256M"
+        max-file: "4"
 
 volumes:
   postgresdata:
