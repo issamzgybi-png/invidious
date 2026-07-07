@@ -22,6 +22,7 @@ services:
         https_only: true
 
         statistics_enabled: false
+        disable_proxy: false
 
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
@@ -29,10 +30,15 @@ services:
           - private_url: "http://companion:8282/companion"
             public_url: "https://companion.fullcontrolvpn.com/companion"
 
-        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
+        invidious_companion_key: "${COMPANION_SECRET}"
 
         use_pubsub_feeds: true
         use_innertube_for_captions: true
+
+        default_user_preferences:
+          quality: hd720
+          quality_dash: 720p
+          local: true
 
     depends_on:
       invidious-db:
@@ -41,7 +47,7 @@ services:
         condition: service_started
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -60,19 +66,15 @@ services:
       - "8282"
 
     environment:
-      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
+      SERVER_SECRET_KEY: "${COMPANION_SECRET}"
       SERVER_BASE_PATH: "/companion"
 
       CACHE_ENABLED: "true"
       CACHE_DIRECTORY: "/var/tmp"
 
-      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "10"
-
-      NETWORKING_FETCH_TIMEOUT_MS: "60000"
-      NETWORKING_FETCH_RETRY_ENABLED: "true"
-      NETWORKING_FETCH_RETRY_TIMES: "2"
-      NETWORKING_FETCH_RETRY_INITIAL_DEBOUNCE: "500"
-      NETWORKING_FETCH_RETRY_DEBOUNCE_MULTIPLIER: "2"
+      JOBS_YOUTUBE_SESSION_PO_TOKEN_ENABLED: "true"
+      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "5"
+      NETWORKING_FETCH_TIMEOUT_MS: "30000"
 
     cap_drop:
       - ALL
@@ -83,14 +85,7 @@ services:
       - no-new-privileges:true
 
     volumes:
-      - companioncache:/var/tmp:rw
-
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8282/companion || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
+      - companioncache:/var/tmp/youtubei.js:rw
 
     logging:
       options:
