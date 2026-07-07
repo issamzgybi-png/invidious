@@ -37,9 +37,11 @@ services:
 
         default_user_preferences:
           preload: true
-          quality: hd720
-          quality_dash: 720p
+          quality: dash
+          quality_dash: 1080p
           local: true
+          autoplay: false
+          listen: false
 
     depends_on:
       invidious-db:
@@ -48,7 +50,7 @@ services:
         condition: service_started
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -67,6 +69,9 @@ services:
       - "8282"
 
     environment:
+      HOST: "0.0.0.0"
+      PORT: "8282"
+
       SERVER_SECRET_KEY: "${COMPANION_SECRET}"
       SERVER_BASE_PATH: "/companion"
 
@@ -74,7 +79,9 @@ services:
       CACHE_DIRECTORY: "/var/tmp"
 
       JOBS_YOUTUBE_SESSION_PO_TOKEN_ENABLED: "true"
-      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "5"
+      JOBS_YOUTUBE_SESSION_FREQUENCY: "*/5 * * * *"
+
+      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "2"
       NETWORKING_FETCH_TIMEOUT_MS: "30000"
 
     cap_drop:
