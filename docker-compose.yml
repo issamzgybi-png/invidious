@@ -18,13 +18,14 @@ services:
         domain: app.fullcontrolvpn.com
         external_port: 443
         https_only: true
+        hsts: true
 
         statistics_enabled: false
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
         invidious_companion:
           - private_url: "http://companion:8282/companion"
-            public_url: "https://companion.fullcontrolvpn.com/companion"
+            public_url: "https://app.fullcontrolvpn.com/companion"
 
         invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
 
@@ -36,10 +37,11 @@ services:
           quality_dash: best
           local: true
           preload: true
-
     depends_on:
-      - invidious-db
-      - companion
+      invidious-db:
+        condition: service_healthy
+      companion:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
@@ -61,15 +63,21 @@ services:
       PORT: "8282"
       SERVER_BASE_PATH: "/companion"
       SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
+
+      CACHE_ENABLED: "true"
       CACHE_DIRECTORY: "/var/tmp"
-    labels:
-      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolallowmethods=GET,HEAD,OPTIONS,POST"
-      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolallowheaders=Range,Content-Type,Authorization,Accept,Origin,X-Requested-With"
-      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolexposeheaders=Accept-Ranges,Content-Encoding,Content-Length,Content-Range,Content-Type"
-      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolalloworiginlist=https://app.fullcontrolvpn.com"
-      - "traefik.http.middlewares.invidious-companion-cors.headers.accesscontrolmaxage=100"
-      - "traefik.http.middlewares.invidious-companion-cors.headers.addvaryheader=true"
-      - "coolify.traefik.middlewares=invidious-companion-cors"
+
+      NETWORKING_FETCH_TIMEOUT_MS: "30000"
+      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "10"
+
+      JOBS_YOUTUBE_SESSION_PO_TOKEN_ENABLED: "true"
+      JOBS_YOUTUBE_SESSION_FREQUENCY: "*/5 * * * *"
+    healthcheck:
+      test: ["CMD", "/thc"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     cap_drop:
       - ALL
     read_only: true
