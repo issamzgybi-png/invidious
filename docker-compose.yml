@@ -6,33 +6,41 @@ services:
     expose:
       - "3000"
 
+    labels:
+      - traefik.enable=true
+
+      # Main Invidious route: everything EXCEPT /companion
+      - traefik.http.routers.invidious.rule=Host(`app.fullcontrolvpn.com`) && !PathPrefix(`/companion`)
+      - traefik.http.routers.invidious.priority=10
+      - traefik.http.services.invidious.loadbalancer.server.port=3000
+
     environment:
       INVIDIOUS_CONFIG: |
         db:
           dbname: invidious
           user: kemal
-          password: "${SERVICE_PASSWORD_POSTGRES:?missing postgres password}"
+          password: ${SERVICE_PASSWORD_POSTGRES}
           host: invidious-db
           port: 5432
 
         check_tables: true
 
-        # Coolify Traefik serves HTTPS externally.
         domain: app.fullcontrolvpn.com
         external_port: 443
         https_only: true
 
         statistics_enabled: false
-        use_pubsub_feeds: true
-        use_innertube_for_captions: true
 
-        hmac_key: "${SERVICE_HEX_64_HMAC:?missing hmac key}"
+        hmac_key: "${SERVICE_HEX_64_HMAC}"
 
         invidious_companion:
           - private_url: "http://companion:8282/companion"
             public_url: "https://app.fullcontrolvpn.com/companion"
 
-        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION:?missing companion key}"
+        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
+
+        use_pubsub_feeds: true
+        use_innertube_for_captions: true
 
     depends_on:
       invidious-db:
@@ -41,7 +49,7 @@ services:
         condition: service_started
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider --tries=1 http://127.0.0.1:3000/api/v1/stats || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -59,8 +67,16 @@ services:
     expose:
       - "8282"
 
+    labels:
+      - traefik.enable=true
+
+      # Companion route: only /companion and below
+      - traefik.http.routers.invidious-companion.rule=Host(`app.fullcontrolvpn.com`) && PathPrefix(`/companion`)
+      - traefik.http.routers.invidious-companion.priority=100
+      - traefik.http.services.invidious-companion.loadbalancer.server.port=8282
+
     environment:
-      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION:?missing companion key}"
+      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
 
     cap_drop:
       - ALL
@@ -85,7 +101,7 @@ services:
     environment:
       POSTGRES_DB: invidious
       POSTGRES_USER: kemal
-      POSTGRES_PASSWORD: "${SERVICE_PASSWORD_POSTGRES:?missing postgres password}"
+      POSTGRES_PASSWORD: "${SERVICE_PASSWORD_POSTGRES}"
 
     volumes:
       - postgresdata:/var/lib/postgresql/data
@@ -98,11 +114,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-
-    logging:
-      options:
-        max-size: "1G"
-        max-file: "4"
 
 volumes:
   postgresdata:
