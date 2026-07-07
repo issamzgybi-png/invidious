@@ -109,11 +109,6 @@ services:
       retries: 10
       start_period: 30s
 
-    logging:
-      options:
-        max-size: "1G"
-        max-file: "4"
-
 volumes:
   postgresdata:
   companioncache:
