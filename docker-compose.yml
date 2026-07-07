@@ -62,8 +62,17 @@ services:
     environment:
       SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
       SERVER_BASE_PATH: "/companion"
+
       CACHE_ENABLED: "true"
       CACHE_DIRECTORY: "/var/tmp"
+
+      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "10"
+
+      NETWORKING_FETCH_TIMEOUT_MS: "60000"
+      NETWORKING_FETCH_RETRY_ENABLED: "true"
+      NETWORKING_FETCH_RETRY_TIMES: "2"
+      NETWORKING_FETCH_RETRY_INITIAL_DEBOUNCE: "500"
+      NETWORKING_FETCH_RETRY_DEBOUNCE_MULTIPLIER: "2"
 
     cap_drop:
       - ALL
@@ -75,6 +84,13 @@ services:
 
     volumes:
       - companioncache:/var/tmp:rw
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8282/companion || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
     logging:
       options:
@@ -100,6 +116,12 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 30s
+
+    logging:
+      options:
+        max-size: "256M"
+        max-file: "4"
 
 volumes:
   postgresdata:
