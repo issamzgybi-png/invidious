@@ -36,6 +36,7 @@ services:
         use_innertube_for_captions: true
 
         default_user_preferences:
+          preload: true
           quality: hd720
           quality_dash: 720p
           local: true
@@ -47,7 +48,7 @@ services:
         condition: service_started
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -85,7 +86,7 @@ services:
       - no-new-privileges:true
 
     volumes:
-      - companioncache:/var/tmp/youtubei.js:rw
+      - companioncache:/var/tmp:rw
 
     logging:
       options:
