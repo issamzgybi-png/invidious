@@ -24,7 +24,8 @@ services:
 
         invidious_companion:
           - private_url: "http://companion:8282/companion"
-            public_url: "https://companion.fullcontrolvpn.com/companion"
+            public_url: "https://app.fullcontrolvpn.com/companion"
+
         invidious_companion_key: "${SERVICE_PASSWORD_COMPANION}"
 
         use_pubsub_feeds: true
@@ -39,7 +40,7 @@ services:
       - invidious-db
       - companion
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/stats || wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -55,7 +56,10 @@ services:
     expose:
       - "8282"
     environment:
+      HOST: "0.0.0.0"
+      SERVER_BASE_PATH: "/companion"
       SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION}"
+      CACHE_DIRECTORY: "/var/tmp"
     cap_drop:
       - ALL
     read_only: true
