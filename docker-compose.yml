@@ -22,7 +22,7 @@ services:
         https_only: true
         hsts: true
 
-        statistics_enabled: false
+        statistics_enabled: true
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
         invidious_companion:
