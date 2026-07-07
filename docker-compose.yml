@@ -1,59 +1,112 @@
-# Warning: This docker-compose file is made for development purposes.
-# Using it will build an image from the locally cloned repository.
-#
-# If you want to use Invidious in production, see the docker-compose.yml file provided
-# in the installation documentation: https://docs.invidious.io/installation/
-
-version: "3"
 services:
-
   invidious:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    image: quay.io/invidious/invidious:2.20260626.0
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:3000:3000"
-    depends_on:
-      invidious-db:
-        condition: service_healthy
-        restart: true
+
+    expose:
+      - "3000"
+
     environment:
-      # Please read the following file for a comprehensive list of all available
-      # configuration options and their associated syntax:
-      # https://github.com/iv-org/invidious/blob/master/config/config.example.yml
       INVIDIOUS_CONFIG: |
         db:
           dbname: invidious
           user: kemal
-          password: kemal
+          password: "${SERVICE_PASSWORD_POSTGRES:?set SERVICE_PASSWORD_POSTGRES in Coolify}"
           host: invidious-db
           port: 5432
+
         check_tables: true
-        # external_port:
-        # domain:
-        # https_only: false
-        # statistics_enabled: false
-        hmac_key: "CHANGE_ME!!"
+
+        # Reverse proxy / public URL
+        domain: app.fullcontrolvpn.com
+        external_port: 443
+        https_only: true
+
+        # Public instance options
+        statistics_enabled: false
+        use_pubsub_feeds: true
+        use_innertube_for_captions: true
+
+        # Security keys
+        hmac_key: "${SERVICE_HEX_64_HMAC:?set SERVICE_HEX_64_HMAC in Coolify}"
+
+        # Invidious Companion
+        invidious_companion:
+          - private_url: "http://companion:8282/companion"
+            public_url: "https://app.fullcontrolvpn.com/companion"
+
+        invidious_companion_key: "${SERVICE_PASSWORD_COMPANION:?set SERVICE_PASSWORD_COMPANION in Coolify}"
+
+    depends_on:
+      invidious-db:
+        condition: service_healthy
+      companion:
+        condition: service_started
+
     healthcheck:
-      test: wget -nv --tries=1 --spider http://127.0.0.1:3000/api/v1/stats || exit 1
+      test: ["CMD-SHELL", "wget -q --spider --tries=1 http://127.0.0.1:3000/api/v1/stats || exit 1"]
       interval: 30s
-      timeout: 5s
-      retries: 2
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+    logging:
+      options:
+        max-size: "1G"
+        max-file: "4"
+
+  companion:
+    image: quay.io/invidious/invidious-companion:latest
+    restart: unless-stopped
+
+    expose:
+      - "8282"
+
+    environment:
+      SERVER_SECRET_KEY: "${SERVICE_PASSWORD_COMPANION:?set SERVICE_PASSWORD_COMPANION in Coolify}"
+
+    cap_drop:
+      - ALL
+
+    read_only: true
+
+    security_opt:
+      - no-new-privileges:true
+
+    volumes:
+      - companioncache:/var/tmp/youtubei.js:rw
+
+    logging:
+      options:
+        max-size: "1G"
+        max-file: "4"
 
   invidious-db:
     image: docker.io/library/postgres:14
     restart: unless-stopped
-    volumes:
-      - postgresdata:/var/lib/postgresql/data
-      - ./config/sql:/config/sql
-      - ./docker/init-invidious-db.sh:/docker-entrypoint-initdb.d/init-invidious-db.sh
+
     environment:
       POSTGRES_DB: invidious
       POSTGRES_USER: kemal
-      POSTGRES_PASSWORD: kemal
+      POSTGRES_PASSWORD: "${SERVICE_PASSWORD_POSTGRES:?set SERVICE_PASSWORD_POSTGRES in Coolify}"
+
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+      - ./config/sql:/config/sql:ro
+      - ./docker/init-invidious-db.sh:/docker-entrypoint-initdb.d/init-invidious-db.sh:ro
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    logging:
+      options:
+        max-size: "1G"
+        max-file: "4"
 
 volumes:
   postgresdata:
+  companioncache:
