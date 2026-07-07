@@ -1,6 +1,6 @@
 services:
   invidious:
-    image: quay.io/invidious/invidious:2.20260626.0
+    image: quay.io/invidious/invidious:latest
     restart: unless-stopped
 
     expose:
@@ -23,6 +23,7 @@ services:
 
         statistics_enabled: false
         disable_proxy: false
+        pool_size: 150
 
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
@@ -74,6 +75,7 @@ services:
 
       SERVER_SECRET_KEY: "${COMPANION_SECRET}"
       SERVER_BASE_PATH: "/companion"
+      SERVER_ENABLE_METRICS: "true"
 
       CACHE_ENABLED: "true"
       CACHE_DIRECTORY: "/var/tmp"
@@ -81,7 +83,7 @@ services:
       JOBS_YOUTUBE_SESSION_PO_TOKEN_ENABLED: "true"
       JOBS_YOUTUBE_SESSION_FREQUENCY: "*/5 * * * *"
 
-      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "2"
+      NETWORKING_VIDEOPLAYBACK_VIDEO_FETCH_CHUNK_SIZE_MB: "1"
       NETWORKING_FETCH_TIMEOUT_MS: "30000"
 
     cap_drop:
