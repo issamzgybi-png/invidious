@@ -2,8 +2,6 @@ services:
   invidious:
     image: quay.io/invidious/invidious:2.20260626.0
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     expose:
       - "3000"
     environment:
@@ -22,7 +20,7 @@ services:
         https_only: true
         hsts: true
 
-        statistics_enabled: true
+        statistics_enabled: false
         hmac_key: "${SERVICE_HEX_64_HMAC}"
 
         invidious_companion:
